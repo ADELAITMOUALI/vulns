@@ -1,18 +1,26 @@
-import { sql } from "drizzle-orm";
-import { pgTable, text, varchar } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+// We use simple Zod schemas since this app is designed to be static-first
+// and relies on pre-aggregated JSON datasets instead of a traditional DB.
+
+export const exploitSchema = z.object({
+  id: z.string(),
+  source: z.enum(['exploit-db', 'github', 'metasploit', 'trickest']),
+  url: z.string(),
+  name: z.string(),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
+export const cveSchema = z.object({
+  id: z.string(), // e.g. CVE-2024-0001
+  description: z.string(),
+  cvss: z.number().nullable(),
+  epss: z.number().nullable(), // probability score
+  inKev: z.boolean(), // CISA KEV status
+  exploits: z.array(exploitSchema),
+  vulnerabilityClass: z.string().nullable(), // RCE, LFI, SSRF, SQLi, etc.
+  affectedSoftware: z.array(z.string()),
+  year: z.number(),
 });
 
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
+export type Exploit = z.infer<typeof exploitSchema>;
+export type Cve = z.infer<typeof cveSchema>;

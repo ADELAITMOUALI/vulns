@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Search, AlertTriangle, Shield, ChevronDown, Zap, Target } from "lucide-react";
+import { Search, Command, AlertTriangle, X, Zap } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface Exploit {
   id: string;
@@ -26,6 +27,8 @@ export default function App() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showCommand, setShowCommand] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
     const loadCves = async () => {
@@ -60,207 +63,257 @@ export default function App() {
     }
   }, [search, cves]);
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100">
-      {/* Header */}
-      <header className="border-b border-slate-800/50 bg-gradient-to-b from-slate-900 to-slate-900/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-gradient-to-br from-red-500 to-red-700 rounded-lg">
-              <AlertTriangle className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-red-400 to-red-600 bg-clip-text text-transparent">
-                Vulnerability Hub
-              </h1>
-              <p className="text-sm text-slate-400 mt-1">Search and explore CVE vulnerabilities</p>
-            </div>
-          </div>
-          
-          {/* Search Bar */}
-          <div className="relative group">
-            <div className="absolute inset-0 bg-gradient-to-r from-red-500/20 to-orange-500/20 rounded-lg blur opacity-0 group-focus-within:opacity-100 transition duration-300"></div>
-            <div className="relative flex gap-3 bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-lg p-2 focus-within:border-red-500/50 transition">
-              <Search className="w-5 h-5 text-slate-400 self-center flex-shrink-0 ml-2" />
-              <input
-                type="text"
-                placeholder="Search CVEs, software, descriptions..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="flex-1 bg-transparent text-slate-100 placeholder-slate-500 outline-none"
-              />
-            </div>
-          </div>
-        </div>
-      </header>
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setShowCommand(!showCommand);
+      }
+      if (e.key === "Escape") {
+        setShowCommand(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showCommand]);
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+  return (
+    <div className="min-h-screen bg-color-bg overflow-hidden relative">
+      <div className="circuit-grid" />
+      <div className="scanlines" />
+
+      <motion.header className="relative z-10 border-b border-slate-700/30 glass-panel mx-4 mt-4 rounded-lg" initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
+        <div className="max-w-6xl mx-auto px-6 py-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <motion.div className="mono font-bold text-2xl text-glow-green" whileHover={{ scale: 1.05 }}>
+                VULNS
+              </motion.div>
+              <div className="text-sm text-slate-400">CVE Intelligence</div>
+            </div>
+            <motion.button
+              onClick={() => setShowCommand(true)}
+              className="flex items-center gap-2 px-3 py-2 rounded border border-slate-700/30 text-slate-400 hover:text-slate-200 text-sm transition"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Command className="w-4 h-4" />
+              <span className="hidden sm:inline">Search</span>
+              <kbd className="ml-2 px-2 py-1 bg-slate-800/50 rounded text-xs text-slate-500">⌘K</kbd>
+            </motion.button>
+          </div>
+
+          <motion.div className="relative" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}>
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+            <input
+              type="text"
+              placeholder="Filter CVEs, software, descriptions..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 mono bg-slate-900/50 border border-slate-700/50 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 transition"
+            />
+          </motion.div>
+        </div>
+      </motion.header>
+
+      <main className="relative z-10 max-w-6xl mx-auto px-4 py-8">
         {loading && (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div>
-            <p className="text-slate-400 mt-4">Loading CVEs...</p>
-          </div>
+          <motion.div className="text-center py-16" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <motion.div className="inline-block" animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity }}>
+              <AlertTriangle className="w-8 h-8 text-green-500" />
+            </motion.div>
+            <p className="text-slate-400 mt-4 mono">LOADING INTELLIGENCE...</p>
+          </motion.div>
         )}
-        
+
         {error && (
-          <div className="bg-red-900/20 border border-red-700/50 rounded-lg p-4 text-red-400">
-            {error}
-          </div>
+          <motion.div className="p-4 rounded border border-glow-red severity-critical bg-red-900/10" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
+            <p className="text-red-400 mono">{error}</p>
+          </motion.div>
         )}
 
         {!loading && !error && (
-          <>
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <h2 className="text-lg font-semibold text-slate-100">
-                  Results
-                </h2>
-                <p className="text-slate-400 text-sm mt-1">
-                  Found <span className="font-bold text-red-400">{filtered.length}</span> of <span className="font-bold text-slate-300">{cves.length}</span> CVEs
-                </p>
-              </div>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
+            <div className="mb-6">
+              <p className="text-slate-400 text-sm mono">
+                RESULTS: <span className="text-glow-green font-bold">{filtered.length}</span> / {cves.length}
+              </p>
             </div>
-            
+
             <div className="grid gap-4">
-              {filtered.length > 0 ? (
-                filtered.map((cve) => (
-                  <CVECard key={cve.id} cve={cve} />
-                ))
-              ) : (
-                <div className="text-center py-12 text-slate-400">
-                  <Search className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>No CVEs found matching your search.</p>
-                </div>
-              )}
+              <AnimatePresence mode="popLayout">
+                {filtered.length > 0 ? (
+                  filtered.map((cve, idx) => (
+                    <CVECard
+                      key={cve.id}
+                      cve={cve}
+                      isExpanded={expandedId === cve.id}
+                      onToggle={() => setExpandedId(expandedId === cve.id ? null : cve.id)}
+                      index={idx}
+                    />
+                  ))
+                ) : (
+                  <motion.div className="text-center py-12 text-slate-400" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                    <AlertTriangle className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p className="mono">NO MATCHES FOUND</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
-          </>
+          </motion.div>
         )}
       </main>
+
+      <AnimatePresence>
+        {showCommand && <CommandPalette close={() => setShowCommand(false)} />}
+      </AnimatePresence>
     </div>
   );
 }
 
-function CVECard({ cve }: { cve: CVE }) {
-  const [expanded, setExpanded] = useState(false);
+function CVECard({
+  cve,
+  isExpanded,
+  onToggle,
+  index,
+}: {
+  cve: CVE;
+  isExpanded: boolean;
+  onToggle: () => void;
+  index: number;
+}) {
   const severity = cve.cvss || 0;
-  
-  const getSeverityColor = () => {
-    if (severity >= 9.0) return { bg: "from-red-900/30 to-red-800/20", border: "border-red-700/50", text: "text-red-400", icon: "text-red-500" };
-    if (severity >= 7.0) return { bg: "from-orange-900/30 to-orange-800/20", border: "border-orange-700/50", text: "text-orange-400", icon: "text-orange-500" };
-    if (severity >= 4.0) return { bg: "from-yellow-900/30 to-yellow-800/20", border: "border-yellow-700/50", text: "text-yellow-400", icon: "text-yellow-500" };
-    return { bg: "from-green-900/30 to-green-800/20", border: "border-green-700/50", text: "text-green-400", icon: "text-green-500" };
+  const getSeverityClass = () => {
+    if (severity >= 9.0) return "severity-critical";
+    if (severity >= 7.0) return "severity-high";
+    if (severity >= 4.0) return "severity-medium";
+    return "severity-low";
   };
-  
-  const colors = getSeverityColor();
 
   return (
-    <div
-      className={`group bg-gradient-to-br ${colors.bg} border ${colors.border} rounded-lg p-6 cursor-pointer transition-all duration-300 hover:border-slate-600/50 hover:shadow-lg hover:shadow-red-900/10`}
-      onClick={() => setExpanded(!expanded)}
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ delay: index * 0.05 }}
+      onClick={onToggle}
+      className={`glass-panel p-6 border rounded-lg cursor-pointer transition-all ${getSeverityClass()} overflow-hidden`}
+      whileHover={{ scale: 1.02, y: -2 }}
+      whileTap={{ scale: 0.98 }}
     >
-      <div className="flex justify-between items-start gap-4">
+      <motion.div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
-          {/* CVE Header */}
-          <div className="flex items-center gap-3 mb-3 flex-wrap">
-            <h2 className={`text-lg font-mono font-bold ${colors.text} group-hover:text-white transition`}>
+          <div className="flex items-center gap-3 flex-wrap mb-3">
+            <motion.h2 className="mono font-bold text-xl text-glow-green" whileHover={{ scale: 1.05 }}>
               {cve.id}
-            </h2>
-            
-            {/* KEV Badge */}
+            </motion.h2>
             {cve.inKev && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-red-900/40 border border-red-700/50 rounded-full text-xs font-bold text-red-300">
-                <Shield className="w-3 h-3" />
-                KEV
-              </span>
+              <motion.span className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-900/20 border border-glow-red rounded-full text-xs font-bold text-red-400" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring" }}>
+                <AlertTriangle className="w-3 h-3" /> KEV
+              </motion.span>
             )}
-            
-            {/* CVSS Badge */}
             {cve.cvss && (
-              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 ${colors.text} bg-slate-800/50 border ${colors.border} rounded-full text-xs font-mono font-bold`}>
-                <Zap className="w-3 h-3" />
-                {cve.cvss.toFixed(1)}
-              </span>
+              <motion.span className="inline-flex items-center gap-1 px-2.5 py-1 bg-purple-900/20 border border-glow-purple rounded-full mono text-xs font-bold text-purple-300" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", delay: 0.1 }}>
+                CVSS {cve.cvss.toFixed(1)}
+              </motion.span>
             )}
           </div>
-          
-          {/* Vulnerability Class & Software */}
-          <div className="mb-3">
-            <p className="text-sm text-slate-300">
-              {cve.vulnerabilityClass && <span className="inline-block bg-slate-700/50 px-2 py-1 rounded text-xs mr-2 mb-2">{cve.vulnerabilityClass}</span>}
-              <span className="text-slate-400">{cve.affectedSoftware.join(", ")}</span>
-            </p>
-          </div>
-          
-          {/* Description */}
-          <p className="text-sm text-slate-400 line-clamp-2 group-hover:line-clamp-none transition">
-            {cve.description}
+
+          <p className="text-sm text-slate-300 mb-2">
+            {cve.affectedSoftware.slice(0, 3).join(" • ")}
+            {cve.affectedSoftware.length > 3 && ` +${cve.affectedSoftware.length - 3}`}
           </p>
+          <p className="text-sm text-slate-400 line-clamp-2">{cve.description}</p>
         </div>
-        
-        {/* Year & Expand Button */}
-        <div className="flex flex-col items-end gap-3 flex-shrink-0">
-          <span className="text-xs text-slate-500 font-semibold">{cve.year}</span>
-          <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform duration-300 ${expanded ? 'rotate-180' : ''}`} />
+
+        <div className="flex flex-col items-end gap-2 flex-shrink-0">
+          <span className="mono text-xs text-slate-500">{cve.year}</span>
+          <motion.div animate={{ rotate: isExpanded ? 180 : 0 }} transition={{ type: "spring", stiffness: 300, damping: 30 }}>
+            <Zap className="w-5 h-5 text-purple-500" />
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
 
-      {/* Expanded Details */}
-      {expanded && (
-        <div className="mt-6 pt-6 border-t border-slate-700/50 space-y-5 animate-in fade-in slide-in-from-top-2 duration-300">
-          {/* Full Description */}
-          <div>
-            <h3 className="text-sm font-semibold text-slate-200 mb-2 flex items-center gap-2">
-              <Target className="w-4 h-4" />
-              Description
-            </h3>
-            <p className="text-sm text-slate-400 leading-relaxed">{cve.description}</p>
-          </div>
-
-          {/* Affected Software */}
-          {cve.affectedSoftware.length > 0 && (
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ type: "spring", stiffness: 300, damping: 30 }} className="mt-6 pt-6 border-t border-slate-700/50 space-y-4">
             <div>
-              <h4 className="text-sm font-semibold text-slate-200 mb-3">Affected Software</h4>
-              <div className="flex flex-wrap gap-2">
-                {cve.affectedSoftware.map((sw, i) => (
-                  <span
-                    key={i}
-                    className="px-3 py-1.5 bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/50 rounded-full text-xs text-slate-300 transition"
-                  >
-                    {sw}
-                  </span>
-                ))}
-              </div>
+              <h3 className="text-xs uppercase font-bold text-glow-green mb-2 mono">Description</h3>
+              <p className="text-sm text-slate-300 leading-relaxed">{cve.description}</p>
             </div>
-          )}
 
-          {/* Available Exploits */}
-          {cve.exploits.length > 0 && (
-            <div>
-              <h4 className="text-sm font-semibold text-slate-200 mb-3 flex items-center gap-2">
-                <Zap className="w-4 h-4 text-orange-500" />
-                Available Exploits
-              </h4>
-              <div className="space-y-2">
-                {cve.exploits.map((exploit) => (
-                  <a
-                    key={exploit.id}
-                    href={exploit.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block px-4 py-3 bg-slate-800/40 hover:bg-slate-700/60 border border-slate-700/50 hover:border-orange-600/50 rounded-lg text-sm text-slate-300 hover:text-orange-300 transition group/link"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium">{exploit.name}</span>
-                      <span className="text-xs text-slate-500 group-hover/link:text-orange-400 transition">{exploit.source}</span>
-                    </div>
-                  </a>
-                ))}
+            {cve.affectedSoftware.length > 0 && (
+              <div>
+                <h3 className="text-xs uppercase font-bold text-glow-purple mb-3 mono">Affected Software</h3>
+                <div className="flex flex-wrap gap-2">
+                  {cve.affectedSoftware.map((sw, i) => (
+                    <motion.span key={i} className="px-3 py-1 bg-slate-800/50 border border-slate-700/50 rounded-full text-xs text-slate-300 mono" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: i * 0.05 }}>
+                      {sw}
+                    </motion.span>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+
+            {cve.exploits.length > 0 && (
+              <div>
+                <h3 className="text-xs uppercase font-bold text-red-400 mb-3 mono flex items-center gap-2">
+                  <Zap className="w-3 h-3" /> Exploits Available
+                </h3>
+                <div className="space-y-2">
+                  {cve.exploits.map((exploit) => (
+                    <motion.a
+                      key={exploit.id}
+                      href={exploit.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block p-3 bg-slate-800/30 border border-slate-700/50 rounded hover:border-glow-purple transition"
+                      whileHover={{ scale: 1.02, x: 4 }}
+                    >
+                      <div className="flex justify-between items-start">
+                        <span className="font-semibold text-slate-200 mono text-sm">{exploit.name}</span>
+                        <span className="text-xs text-slate-500 mono">{exploit.source}</span>
+                      </div>
+                    </motion.a>
+                  ))}
+                </div>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
+function CommandPalette({ close }: { close: () => void }) {
+  return (
+    <motion.div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={close} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+      <motion.div className="absolute inset-0 backdrop-blur-sm" onClick={close} />
+      <motion.div className="relative w-full max-w-2xl glass-panel border border-cyan-500/30 rounded-lg shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()} initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} transition={{ type: "spring", stiffness: 300, damping: 30 }}>
+        <div className="p-4 border-b border-slate-700/30 flex items-center gap-3">
+          <Command className="w-5 h-5 text-cyan-500" />
+          <input type="text" placeholder="Filter CVEs (e.g., 'high severity', 'KEV only')..." className="flex-1 bg-transparent outline-none text-slate-100 mono text-sm placeholder-slate-500" autoFocus />
+          <button onClick={close} className="text-slate-500 hover:text-slate-200">
+            <X className="w-5 h-5" />
+          </button>
         </div>
-      )}
-    </div>
+        <div className="p-4 space-y-2 max-h-96 overflow-y-auto">
+          <motion.div className="p-3 rounded border border-slate-700/30 cursor-pointer hover:border-cyan-500/50 transition" whileHover={{ x: 4 }}>
+            <p className="text-sm text-slate-200 font-semibold">High Severity (CVSS ≥ 7.0)</p>
+            <p className="text-xs text-slate-500 mono">Show only critical vulnerabilities</p>
+          </motion.div>
+          <motion.div className="p-3 rounded border border-slate-700/30 cursor-pointer hover:border-cyan-500/50 transition" whileHover={{ x: 4 }}>
+            <p className="text-sm text-slate-200 font-semibold">KEV Exploited</p>
+            <p className="text-xs text-slate-500 mono">Show CISA KEV catalog items only</p>
+          </motion.div>
+          <motion.div className="p-3 rounded border border-slate-700/30 cursor-pointer hover:border-cyan-500/50 transition" whileHover={{ x: 4 }}>
+            <p className="text-sm text-slate-200 font-semibold">With Exploits</p>
+            <p className="text-xs text-slate-500 mono">Show CVEs with available exploits</p>
+          </motion.div>
+        </div>
+      </motion.div>
+    </motion.div>
   );
 }

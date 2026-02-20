@@ -77,6 +77,7 @@
     "zod-validation-error": "^3.4.0"
   },
   "devDependencies": {
+    "gh-pages": "^5.0.0",
     "@tailwindcss/typography": "^0.5.15",
     "@tailwindcss/vite": "^4.1.18",
     "@types/connect-pg-simple": "^7.0.3",
@@ -97,6 +98,10 @@
     "tsx": "^4.20.5",
     "typescript": "5.6.3",
     "vite": "^7.3.0"
+  },
+  "scripts": {
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist/public -b gh-pages -r https://github.com/ADELAITMOUALI/vulns.git"
   },
   "overrides": {
     "drizzle-kit": {

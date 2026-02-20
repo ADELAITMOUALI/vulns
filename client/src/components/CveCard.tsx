@@ -11,7 +11,7 @@ import {
   Globe 
 } from "lucide-react";
 import type { Cve, Exploit } from "@shared/schema";
-import { clsx } from "clsx";
+import clsx from "clsx";
 
 interface CveCardProps {
   cve: Cve;

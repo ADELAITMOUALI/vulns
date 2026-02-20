@@ -100,6 +100,11 @@
     "vite": "^7.3.0"
   },
   "scripts": {
+    "dev": "NODE_ENV=development tsx server/index.ts",
+    "build": "tsx script/build.ts",
+    "start": "NODE_ENV=production node dist/index.cjs",
+    "check": "tsc",
+    "db:push": "drizzle-kit push",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist/public -b gh-pages -r https://github.com/ADELAITMOUALI/vulns.git"
   },

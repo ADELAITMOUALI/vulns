@@ -10,3 +10,4 @@ vite.config.ts.*
 .vscode/
 npm-debug.log*
 coverage/
+.local/

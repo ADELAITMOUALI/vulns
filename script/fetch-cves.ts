@@ -12,6 +12,9 @@ import { execSync } from "child_process";
 // Configuration
 const CISA_KEV_URL = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json";
 const NVD_API_URL = "https://services.nvd.nist.gov/rest/json/cves/2.0";
+// Fetch only this date range to get recent CVEs
+const PUB_START = "2024-01-01T00:00:00:000 UTC-00:00";
+const PUB_END = "2026-12-31T23:59:59:999 UTC-00:00";
 
 // Output path
 const OUTPUT_DIR = "client/public/api";
@@ -136,7 +139,7 @@ async function fetchCISAKEV(): Promise<Set<string>> {
 }
 
 async function fetchNVD(startIndex = 0, resultsPerPage = 100): Promise<{ cves: NVDCVE[]; totalResults: number }> {
-  const url = `${NVD_API_URL}?startIndex=${startIndex}&resultsPerPage=${resultsPerPage}`;
+  const url = `${NVD_API_URL}?pubStartDate=${encodeURIComponent(PUB_START)}&pubEndDate=${encodeURIComponent(PUB_END)}&startIndex=${startIndex}&resultsPerPage=${resultsPerPage}`;
   
   console.log(`Fetching NVD CVEs (startIndex: ${startIndex}, perPage: ${resultsPerPage})...`);
   

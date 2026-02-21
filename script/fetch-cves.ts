@@ -12,9 +12,8 @@ import { execSync } from "child_process";
 // Configuration
 const CISA_KEV_URL = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json";
 const NVD_API_URL = "https://services.nvd.nist.gov/rest/json/cves/2.0";
-// Fetch only this date range to get recent CVEs
-const PUB_START = "2024-01-01T00:00:00:000 UTC-00:00";
-const PUB_END = "2026-12-31T23:59:59:999 UTC-00:00";
+// Note: NVD API returns many results. We'll fetch the latest ~500 CVEs
+// by requesting the pages at the end of the results (most recent entries).
 
 // Output path
 const OUTPUT_DIR = "client/public/api";
@@ -165,29 +164,26 @@ async function fetchAllNVDCVE(): Promise<NVDCVE[]> {
   const perPage = 100;
   let totalResults = 0;
   
-  // First request to get total count
+  // First request to get total count (we don't keep this first page)
   const firstBatch = await fetchNVD(0, perPage);
   totalResults = firstBatch.totalResults;
-  allCVE = [...firstBatch.cves];
-  
+
   console.log(`  Total CVEs in NVD: ${totalResults}`);
-  
-  // Limit to reasonable number to avoid long fetch times
+
+  // We want the latest `maxCVEs` entries. Calculate starting index near the end.
   const maxCVEs = Math.min(totalResults, 500);
-  const remaining = maxCVEs - perPage;
-  
-  if (remaining > 0) {
-    const batches = Math.ceil(remaining / perPage);
-    for (let i = 1; i <= batches; i++) {
-      const startIndex = i * perPage;
-      try {
-        const batch = await fetchNVD(startIndex, perPage);
-        allCVE = [...allCVE, ...batch.cves];
-        console.log(`  Fetched ${allCVE.length}/${maxCVEs}`);
-      } catch (err) {
-        console.error(`Error fetching batch ${i}:`, err);
-        break;
-      }
+  const startIndexBase = Math.max(0, totalResults - maxCVEs);
+  const batches = Math.ceil(maxCVEs / perPage);
+
+  for (let i = 0; i < batches; i++) {
+    const startIndex = startIndexBase + i * perPage;
+    try {
+      const batch = await fetchNVD(startIndex, perPage);
+      allCVE = [...allCVE, ...batch.cves];
+      console.log(`  Fetched ${allCVE.length}/${maxCVEs}`);
+    } catch (err) {
+      console.error(`Error fetching batch at startIndex ${startIndex}:`, err);
+      break;
     }
   }
   

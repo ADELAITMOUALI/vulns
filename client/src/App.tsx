@@ -29,6 +29,8 @@ export default function App() {
   const [error, setError] = useState("");
   const [showCommand, setShowCommand] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
+  const [pageSize] = useState(20);
 
   useEffect(() => {
     const loadCves = async () => {
@@ -36,8 +38,10 @@ export default function App() {
         const response = await fetch("./api/cves.json");
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
-        setCves(data);
-        setFiltered(data);
+        // keep only CVEs from 2024 through 2026
+        const recent = data.filter((c: CVE) => c.year >= 2024 && c.year <= 2026);
+        setCves(recent);
+        setFiltered(recent);
         setLoading(false);
       } catch (err) {
         setError(`Failed to load CVEs: ${err}`);
@@ -63,6 +67,11 @@ export default function App() {
     }
   }, [search, cves]);
 
+  // reset to first page when the filtered results change (fixes search showing counts but empty page)
+  useEffect(() => {
+    setPage(0);
+  }, [filtered]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
@@ -76,6 +85,11 @@ export default function App() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [showCommand]);
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const start = page * pageSize;
+  const end = Math.min(start + pageSize, filtered.length);
+  const paginated = filtered.slice(start, end);
 
   return (
     <div className="min-h-screen bg-color-bg overflow-hidden relative">
@@ -134,22 +148,38 @@ export default function App() {
 
         {!loading && !error && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
-            <div className="mb-6">
+            <div className="mb-6 flex items-center justify-between gap-4">
               <p className="text-slate-400 text-sm mono">
-                RESULTS: <span className="text-glow-green font-bold">{filtered.length}</span> / {cves.length}
+                SHOWING <span className="text-glow-green font-bold">{filtered.length > 0 ? `${start + 1}-${end}` : 0}</span> of <span className="font-bold">{filtered.length}</span> (total {cves.length})
               </p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  disabled={page <= 0}
+                  className="px-3 py-1 rounded bg-slate-800/50 text-slate-200 disabled:opacity-40"
+                >
+                  Prev
+                </button>
+                <button
+                  onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+                  disabled={page >= pageCount - 1}
+                  className="px-3 py-1 rounded bg-slate-800/50 text-slate-200 disabled:opacity-40"
+                >
+                  Next
+                </button>
+              </div>
             </div>
 
             <div className="grid gap-4">
               <AnimatePresence mode="popLayout">
-                {filtered.length > 0 ? (
-                  filtered.map((cve, idx) => (
+                {paginated.length > 0 ? (
+                  paginated.map((cve, idx) => (
                     <CVECard
                       key={cve.id}
                       cve={cve}
                       isExpanded={expandedId === cve.id}
                       onToggle={() => setExpandedId(expandedId === cve.id ? null : cve.id)}
-                      index={idx}
+                      index={start + idx}
                     />
                   ))
                 ) : (
@@ -159,6 +189,12 @@ export default function App() {
                   </motion.div>
                 )}
               </AnimatePresence>
+              {/* pagination info for small screens */}
+              {filtered.length > 0 && (
+                <div className="mt-4 text-sm text-slate-400 mono">
+                  Page {page + 1} / {pageCount}
+                </div>
+              )}
             </div>
           </motion.div>
         )}

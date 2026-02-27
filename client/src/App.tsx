@@ -35,12 +35,11 @@ export default function App() {
   useEffect(() => {
     const loadCves = async () => {
       try {
-        const response = await fetch("./api/cves.json");
+        const response = await fetch("/api/cves"); // Updated endpoint
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
-        const recent = data.filter((c: CVE) => c.year >= 2024 && c.year <= 2026);
-        setCves(recent);
-        setFiltered(recent);
+        setCves(data);
+        setFiltered(data);
         setLoading(false);
       } catch (err) {
         setError(`Failed to load CVEs: ${err}`);

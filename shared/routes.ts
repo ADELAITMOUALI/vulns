@@ -18,7 +18,7 @@ export const api = {
   cves: {
     list: {
       method: 'GET' as const,
-      path: './api/cves.json' as const,
+      path: '/api/cves' as const, // Changed from './api/cves.json'
       responses: {
         200: z.array(cveSchema),
       },

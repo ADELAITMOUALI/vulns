@@ -54,5 +54,26 @@ export async function registerRoutes(
     }
   });
 
+  app.get(api.cves.searchByTechnology.path, async (req, res) => {
+    const query = req.query.query as string;
+    if (!query) {
+      return res.status(400).json({ message: "Query parameter is required" });
+    }
+
+    try {
+      const response = await fetch(`https://cvedb.shodan.io/cve/search?query=${query}`);
+      if (response.ok) {
+        const data = await response.json();
+        const transformedData = data.map(transformShodanCve);
+        res.json(transformedData);
+      } else {
+        res.status(response.status).json({ message: "Failed to search CVEs" });
+      }
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  });
+
   return httpServer;
 }

@@ -60,7 +60,9 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  await registerRoutes(httpServer, app);
+  const api = express.Router();
+  await registerRoutes(httpServer, api);
+  app.use("/api", api);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

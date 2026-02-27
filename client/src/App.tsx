@@ -35,7 +35,7 @@ export default function App() {
   useEffect(() => {
     const loadCves = async () => {
       try {
-        const response = await fetch("/api/cves"); // Updated endpoint
+        const response = await fetch("/api/cves");
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
         setCves(data);
@@ -69,15 +69,20 @@ export default function App() {
       } else if (!search.trim()) {
         setFiltered(cves);
       } else {
-        const term = search.toLowerCase();
-        setFiltered(
-          cves.filter(
-            (cve) =>
-              cve.id.toLowerCase().includes(term) ||
-              cve.description.toLowerCase().includes(term) ||
-              cve.affectedSoftware.some((sw) => sw.toLowerCase().includes(term))
-          )
-        );
+        try {
+          setLoading(true);
+          const response = await fetch(`/api/cves/search?query=${search}`);
+          if (response.ok) {
+            const data = await response.json();
+            setFiltered(data);
+          } else {
+            setFiltered([]);
+          }
+        } catch (error) {
+          setError(`Failed to search for CVEs: ${error}`);
+        } finally {
+          setLoading(false);
+        }
       }
     };
 

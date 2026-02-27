@@ -18,7 +18,7 @@ export const api = {
   cves: {
     list: {
       method: 'GET' as const,
-      path: '/api/cves' as const, // Changed from './api/cves.json'
+      path: '/api/cves' as const,
       responses: {
         200: z.array(cveSchema),
       },
@@ -30,8 +30,15 @@ export const api = {
         200: cveSchema,
         404: errorSchemas.notFound,
       },
-    }
-  }
+    },
+    searchByTechnology: {
+      method: 'GET' as const,
+      path: '/api/cves/search' as const,
+      responses: {
+        200: z.array(cveSchema),
+      },
+    },
+  },
 };
 
 export function buildUrl(path: string, params?: Record<string, string | number>): string {

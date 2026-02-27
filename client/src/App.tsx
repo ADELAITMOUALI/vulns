@@ -38,7 +38,6 @@ export default function App() {
         const response = await fetch("./api/cves.json");
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
-        // keep only CVEs from 2024 through 2026
         const recent = data.filter((c: CVE) => c.year >= 2024 && c.year <= 2026);
         setCves(recent);
         setFiltered(recent);
@@ -52,22 +51,41 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!search.trim()) {
-      setFiltered(cves);
-    } else {
-      const term = search.toLowerCase();
-      setFiltered(
-        cves.filter(
-          (cve) =>
-            cve.id.toLowerCase().includes(term) ||
-            cve.description.toLowerCase().includes(term) ||
-            cve.affectedSoftware.some((sw) => sw.toLowerCase().includes(term))
-        )
-      );
-    }
+    const handleSearch = async () => {
+      if (search.match(/^CVE-\d{4}-\d{4,7}$/i)) {
+        try {
+          setLoading(true);
+          const response = await fetch(`/api/cve/search/${search}`);
+          if (response.ok) {
+            const cve = await response.json();
+            setFiltered([cve]);
+          } else {
+            setFiltered([]);
+          }
+        } catch (error) {
+          setError(`Failed to search for CVE: ${error}`);
+        } finally {
+          setLoading(false);
+        }
+      } else if (!search.trim()) {
+        setFiltered(cves);
+      } else {
+        const term = search.toLowerCase();
+        setFiltered(
+          cves.filter(
+            (cve) =>
+              cve.id.toLowerCase().includes(term) ||
+              cve.description.toLowerCase().includes(term) ||
+              cve.affectedSoftware.some((sw) => sw.toLowerCase().includes(term))
+          )
+        );
+      }
+    };
+
+    const searchTimeout = setTimeout(handleSearch, 300); // Debounce search
+    return () => clearTimeout(searchTimeout);
   }, [search, cves]);
 
-  // reset to first page when the filtered results change (fixes search showing counts but empty page)
   useEffect(() => {
     setPage(0);
   }, [filtered]);
@@ -121,7 +139,7 @@ export default function App() {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
             <input
               type="text"
-              placeholder="Filter CVEs, software, descriptions..."
+              placeholder="Filter CVEs, software, descriptions... or enter a CVE ID"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-12 pr-4 py-3 mono bg-slate-900/50 border border-slate-700/50 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 transition"

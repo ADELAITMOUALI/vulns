@@ -22,6 +22,14 @@ export const api = {
       responses: {
         200: z.array(cveSchema),
       },
+    },
+    search: {
+      method: 'GET' as const,
+      path: '/api/cve/search/:id' as const,
+      responses: {
+        200: cveSchema,
+        404: errorSchemas.notFound,
+      },
     }
   }
 };
